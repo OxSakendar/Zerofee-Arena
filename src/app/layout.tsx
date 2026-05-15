@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ZeroFee Arena",
   description: "The First AI-Native On-Chain Strategy Game",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

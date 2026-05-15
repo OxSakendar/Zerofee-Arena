@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Cpu, Zap, Globe, Coins } from "lucide-react";
+import { Shield, Cpu, Zap, Globe, Coins, Menu, X as CloseIcon } from "lucide-react";
 import Link from "next/link";
 import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
@@ -14,6 +14,7 @@ export default function Home() {
   const { openConnectModal } = useConnectModal();
   const router = useRouter();
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleEnterArena = () => {
     if (!isConnected && openConnectModal) {
@@ -34,21 +35,46 @@ export default function Home() {
       </div>
 
       {/* Navbar */}
-      <nav className="relative z-10 border-b border-white/5 glass">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <nav className="relative z-50 border-b border-white/5 glass">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded bg-neon-blue flex items-center justify-center">
               <Zap className="w-5 h-5 text-black" />
             </div>
-            <span className="text-xl font-bold tracking-wider text-glow">ZEROFEE<span className="text-white">ARENA</span></span>
+            <span className="text-lg md:text-xl font-bold tracking-wider text-glow">ZEROFEE<span className="text-white">ARENA</span></span>
           </div>
+          
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
             <Link href="#features" className="hover:text-neon-blue transition-colors">Features</Link>
             <Link href="#leaderboard" className="hover:text-neon-purple transition-colors">Leaderboard</Link>
             <Link href="#docs" className="hover:text-neon-pink transition-colors">Docs</Link>
           </div>
-          <ConnectButton />
+
+          <div className="flex items-center gap-4">
+            <div className="scale-90 md:scale-100 origin-right">
+              <ConnectButton />
+            </div>
+            <button 
+              className="md:hidden p-2 text-gray-400 hover:text-white"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <CloseIcon /> : <Menu />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        <motion.div
+          initial={false}
+          animate={isMenuOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+          className="md:hidden overflow-hidden bg-cyber-black/95 backdrop-blur-xl border-b border-white/5"
+        >
+          <div className="px-6 py-8 flex flex-col gap-6 text-lg font-medium">
+            <Link href="#features" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-neon-blue transition-colors">Features</Link>
+            <Link href="#leaderboard" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-neon-purple transition-colors">Leaderboard</Link>
+            <Link href="#docs" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-neon-pink transition-colors">Docs</Link>
+          </div>
+        </motion.div>
       </nav>
 
       {/* Hero Section */}
@@ -68,7 +94,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight"
+            className="text-4xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight"
           >
             The First <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">AI-Native</span><br />
             On-Chain Strategy Game

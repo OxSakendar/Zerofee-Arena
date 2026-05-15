@@ -118,20 +118,24 @@ export default function Arena() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-30" />
       </div>
 
-      <nav className="relative z-10 border-b border-white/5 glass px-6 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-neon-blue flex items-center justify-center">
-            <Zap className="w-5 h-5 text-black" />
+      <nav className="relative z-50 border-b border-white/5 glass">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded bg-neon-blue flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5 text-black" />
+            </div>
+            <span className="text-lg md:text-xl font-bold tracking-wider text-glow whitespace-nowrap">ZEROFEE<span className="text-white">ARENA</span></span>
           </div>
-          <span className="text-xl font-bold tracking-wider text-glow">ZEROFEE<span className="text-white">ARENA</span></span>
+          <div className="scale-90 md:scale-100 origin-right">
+            <ConnectButton />
+          </div>
         </div>
-        <ConnectButton />
       </nav>
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
-        <header className="mb-12">
-          <h1 className="text-4xl font-extrabold text-white mb-2">Command Center</h1>
-          <p className="text-gray-400">Welcome to the grid, Agent {address?.slice(0, 6)}...{address?.slice(-4)}</p>
+        <header className="mb-8 md:mb-12">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">Command Center</h1>
+          <p className="text-sm md:text-base text-gray-400">Welcome, Agent {address?.slice(0, 6)}...{address?.slice(-4)}</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -164,15 +168,15 @@ export default function Arena() {
             <p className="text-gray-400 mb-6 leading-relaxed">
               Interact with the GenLayer Intelligent Contract to generate a new AI-driven mission based on current world data and your territory status.
             </p>
-            <div className="bg-black/40 border border-white/5 rounded p-4 mb-6 text-sm font-mono text-gray-300 min-h-[100px] flex items-center justify-center whitespace-pre-wrap text-left px-4">
+            <div className="bg-black/60 border border-white/5 rounded p-4 mb-6 text-xs md:text-sm font-mono text-gray-300 min-h-[120px] flex items-start justify-start whitespace-pre-wrap text-left px-4 overflow-y-auto max-h-[300px]">
               {missionLog}
             </div>
             <button 
               onClick={handleInitializeMission}
               disabled={isPending}
-              className={`w-full md:w-auto px-8 py-4 bg-neon-purple text-white font-bold rounded transition-all shadow-[0_0_15px_rgba(176,38,255,0.3)] hover:shadow-[0_0_25px_rgba(176,38,255,0.6)] ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white hover:text-black'}`}
+              className={`w-full md:w-auto px-8 py-4 bg-neon-purple text-white font-bold rounded transition-all shadow-[0_0_15px_rgba(176,38,255,0.3)] hover:shadow-[0_0_25px_rgba(176,38,255,0.6)] text-sm md:text-base ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white hover:text-black'}`}
             >
-              {isPending ? 'Processing...' : 'Initialize LLM Mission (0.0 GEN)'}
+              {isPending ? 'Processing...' : 'Initialize Mission (0.0 GEN)'}
             </button>
           </div>
         </div>

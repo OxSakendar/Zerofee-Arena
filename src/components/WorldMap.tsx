@@ -11,7 +11,27 @@ interface WorldMapProps {
 }
 
 export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
+  const [activeAgents, setActiveAgents] = useState(1249);
+  const [networkStability, setNetworkStability] = useState(98.4);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
+  const [showIntel, setShowIntel] = useState(false);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveAgents(prev => {
+        const change = Math.floor(Math.random() * 5) - 2;
+        return Math.max(1200, prev + change);
+      });
+
+      setNetworkStability(prev => {
+        const change = (Math.random() * 0.2 - 0.1);
+        const newVal = prev + change;
+        return Number(Math.min(99.9, Math.max(95.0, newVal)).toFixed(1));
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const sectors = [
     { id: 'neo-tokyo', name: 'Neo Tokyo Sector', status: 'Controlled', power: 'High', x: '75%', y: '35%' },
@@ -23,26 +43,26 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            className="absolute inset-0 bg-black/95 backdrop-blur-md"
           />
           
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-6xl aspect-[16/9] bg-cyber-black rounded-2xl border border-neon-blue/30 overflow-hidden shadow-[0_0_50px_rgba(0,243,255,0.2)]"
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full h-full md:h-auto md:max-w-6xl md:aspect-[16/9] bg-cyber-black md:rounded-2xl border-b md:border border-neon-blue/30 overflow-hidden shadow-[0_0_50px_rgba(0,243,255,0.2)] flex flex-col"
           >
             {/* Header */}
-            <div className="absolute top-0 inset-x-0 h-16 border-b border-white/5 glass flex items-center justify-between px-6 z-20">
+            <div className="h-16 border-b border-white/5 glass flex items-center justify-between px-6 shrink-0 z-20">
               <div className="flex items-center gap-3">
                 <MapIcon className="w-5 h-5 text-neon-blue" />
-                <h2 className="text-xl font-bold tracking-widest text-glow uppercase">Global Territory Grid</h2>
+                <h2 className="text-sm md:text-xl font-bold tracking-widest text-glow uppercase">Global Territory Grid</h2>
               </div>
               <button 
                 onClick={onClose}
@@ -53,14 +73,14 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Map Container */}
-            <div className="absolute inset-0 pt-16">
-              <div className="relative w-full h-full p-8 flex items-center justify-center">
-                <div className="relative w-full h-full rounded-xl overflow-hidden border border-white/5">
+            <div className="relative flex-1 overflow-hidden">
+              <div className="absolute inset-0 p-4 md:p-8 flex items-center justify-center">
+                <div className="relative w-full h-full rounded-xl overflow-hidden border border-white/5 bg-black/20">
                   <Image 
                     src="/world-map.png" 
                     alt="Cyberpunk World Map" 
                     fill
-                    className="object-cover opacity-60"
+                    className="object-cover opacity-60 md:opacity-40"
                     priority
                   />
                   
@@ -75,9 +95,10 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
                       className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
                       onMouseEnter={() => setHoveredSector(sector.id)}
                       onMouseLeave={() => setHoveredSector(null)}
+                      onClick={() => setHoveredSector(hoveredSector === sector.id ? null : sector.id)}
                     >
                       <div className="relative">
-                        <div className={`w-4 h-4 rounded-full ${sector.status === 'Controlled' ? 'bg-neon-blue' : sector.status === 'Contested' ? 'bg-neon-purple' : 'bg-gray-500'} animate-pulse shadow-[0_0_15px_rgba(0,243,255,0.5)]`} />
+                        <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${sector.status === 'Controlled' ? 'bg-neon-blue' : sector.status === 'Contested' ? 'bg-neon-purple' : 'bg-gray-500'} animate-pulse shadow-[0_0_15px_rgba(0,243,255,0.5)]`} />
                         <div className={`absolute inset-0 rounded-full border-2 ${sector.status === 'Controlled' ? 'border-neon-blue' : 'border-white/20'} animate-ping opacity-50`} />
                         
                         {/* Tooltip */}
@@ -85,12 +106,12 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
                           {hoveredSector === sector.id && (
                             <motion.div
                               initial={{ opacity: 0, y: 10, x: -50 }}
-                              animate={{ opacity: 1, y: -80, x: -50 }}
+                              animate={{ opacity: 1, y: -60, x: -50 }}
                               exit={{ opacity: 0, y: 10, x: -50 }}
-                              className="absolute z-30 w-48 glass p-3 rounded border border-neon-blue/40 pointer-events-none"
+                              className="absolute z-30 w-32 md:w-48 glass p-2 md:p-3 rounded border border-neon-blue/40 pointer-events-none"
                             >
-                              <p className="text-xs font-bold text-neon-blue mb-1 uppercase tracking-tighter">{sector.name}</p>
-                              <div className="flex items-center justify-between text-[10px] text-gray-400">
+                              <p className="text-[10px] md:text-xs font-bold text-neon-blue mb-1 uppercase tracking-tighter">{sector.name}</p>
+                              <div className="flex flex-col md:flex-row md:items-center justify-between text-[8px] md:text-[10px] text-gray-400 gap-1">
                                 <span>Status: {sector.status}</span>
                                 <span>Power: {sector.power}</span>
                               </div>
@@ -102,45 +123,105 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
                   ))}
                 </div>
               </div>
-            </div>
 
-            {/* Sidebar / Info */}
-            <div className="absolute right-8 bottom-8 w-64 glass p-6 rounded-lg border border-white/10 hidden lg:block backdrop-blur-xl">
-              <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                <Target className="w-4 h-4 text-neon-pink" />
-                Live Intel
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400 flex items-center gap-2">
-                    <Users className="w-3 h-3" />
-                    Active Agents
-                  </span>
-                  <span className="text-neon-blue font-mono">1,249</span>
+              {/* Sidebar / Info - Desktop */}
+              <div className="absolute right-8 bottom-8 w-64 glass p-6 rounded-lg border border-white/10 hidden lg:block backdrop-blur-xl">
+                <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-neon-pink" />
+                  Live Intel
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-400 flex items-center gap-2">
+                      <Users className="w-3 h-3" />
+                      Active Agents
+                    </span>
+                    <motion.span 
+                      key={activeAgents}
+                      initial={{ opacity: 0.5 }}
+                      animate={{ opacity: 1 }}
+                      className="text-neon-blue font-mono"
+                    >
+                      {activeAgents.toLocaleString()}
+                    </motion.span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-400 flex items-center gap-2">
+                      <Shield className="w-3 h-3" />
+                      Network Stability
+                    </span>
+                    <motion.span 
+                      key={networkStability}
+                      initial={{ opacity: 0.5 }}
+                      animate={{ opacity: 1 }}
+                      className="text-neon-purple font-mono"
+                    >
+                      {networkStability}%
+                    </motion.span>
+                  </div>
+                  <div className="h-px bg-white/5 my-2" />
+                  <p className="text-[10px] text-gray-500 italic">
+                    * All territory data is synced via GenLayer Intelligent Contracts in real-time.
+                  </p>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400 flex items-center gap-2">
-                    <Shield className="w-3 h-3" />
-                    Network Stability
-                  </span>
-                  <span className="text-neon-purple font-mono">98.4%</span>
-                </div>
-                <div className="h-px bg-white/5 my-2" />
-                <p className="text-[10px] text-gray-500 italic">
-                  * All territory data is synced via GenLayer Intelligent Contracts in real-time.
-                </p>
               </div>
+
+              {/* Mobile Intel Toggle */}
+              <div className="absolute bottom-4 right-4 lg:hidden z-30">
+                 <button 
+                  onClick={() => setShowIntel(!showIntel)}
+                  className="p-3 bg-neon-blue text-black rounded-full shadow-lg shadow-neon-blue/20"
+                 >
+                    <Target className="w-5 h-5" />
+                 </button>
+              </div>
+
+              {/* Mobile Intel Panel */}
+              <AnimatePresence>
+                {showIntel && (
+                  <motion.div
+                    initial={{ y: '100%' }}
+                    animate={{ y: 0 }}
+                    exit={{ y: '100%' }}
+                    className="absolute inset-x-0 bottom-0 bg-cyber-black/95 border-t border-neon-blue/30 p-6 z-40 lg:hidden backdrop-blur-xl"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Target className="w-4 h-4 text-neon-pink" />
+                        Live Intel
+                      </h3>
+                      <button onClick={() => setShowIntel(false)}><X className="w-4 h-4 text-gray-400" /></button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                          <Users className="w-3 h-3" />
+                          Agents
+                        </span>
+                        <span className="text-lg text-neon-blue font-mono font-bold">{activeAgents.toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                          <Shield className="w-3 h-3" />
+                          Stability
+                        </span>
+                        <span className="text-lg text-neon-purple font-mono font-bold">{networkStability}%</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Bottom Bar Controls */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/40 border border-white/5 px-6 py-3 rounded-full backdrop-blur-md">
-               <div className="flex items-center gap-2 text-[10px] text-gray-400 uppercase tracking-widest">
+            <div className="h-14 border-t border-white/5 bg-black/40 flex items-center justify-center gap-4 md:gap-8 px-4 shrink-0 overflow-x-auto whitespace-nowrap scrollbar-hide">
+               <div className="flex items-center gap-2 text-[8px] md:text-[10px] text-gray-400 uppercase tracking-widest">
                   <span className="w-2 h-2 rounded-full bg-neon-blue" /> Controlled
                </div>
-               <div className="flex items-center gap-2 text-[10px] text-gray-400 uppercase tracking-widest">
+               <div className="flex items-center gap-2 text-[8px] md:text-[10px] text-gray-400 uppercase tracking-widest">
                   <span className="w-2 h-2 rounded-full bg-neon-purple" /> Contested
                </div>
-               <div className="flex items-center gap-2 text-[10px] text-gray-400 uppercase tracking-widest">
+               <div className="flex items-center gap-2 text-[8px] md:text-[10px] text-gray-400 uppercase tracking-widest">
                   <span className="w-2 h-2 rounded-full bg-gray-500" /> Neutral
                </div>
             </div>

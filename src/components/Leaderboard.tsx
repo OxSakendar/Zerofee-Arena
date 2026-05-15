@@ -12,6 +12,12 @@ const LEADERBOARD_DATA = [
   { id: 5, name: "TitanCore", address: "0xE55...0a4F", score: 8420, iq: 158, accuracy: "95.5%", status: "Elite" },
 ];
 
+const AGENT_NAMES = [
+  "NexusPrime", "CypherGhost", "NeonOracle", "VoidRunner", "TitanCore", 
+  "AetherMind", "GlitchWraith", "SpectreNet", "CircuitKing", "DataDragon",
+  "VectorSoul", "QuantumPulse", "NeuralBlade", "ShadowCode", "BinaryStar"
+];
+
 export const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = React.useState(LEADERBOARD_DATA);
 
@@ -28,9 +34,16 @@ export const Leaderboard = () => {
         const currentAcc = parseFloat(player.accuracy);
         const accChange = (Math.random() * 0.2 - 0.1);
         const newAcc = Math.min(99.9, Math.max(90.0, currentAcc + accChange)).toFixed(1) + "%";
+
+        // Occasionally change the name (simulating new agent rise)
+        const shouldChangeName = Math.random() > 0.95;
+        const newName = shouldChangeName 
+          ? AGENT_NAMES[Math.floor(Math.random() * AGENT_NAMES.length)]
+          : player.name;
         
         return {
           ...player,
+          name: newName,
           score: Math.max(1000, player.score + scoreChange),
           iq: Math.min(200, Math.max(100, player.iq + iqChange)),
           accuracy: newAcc
@@ -111,10 +124,15 @@ export const Leaderboard = () => {
                       </div>
                     </td>
                     <td className="px-6 py-6">
-                      <div>
+                      <motion.div
+                        key={player.name}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.4 }}
+                      >
                         <div className="font-bold text-white group-hover:text-neon-blue transition-colors">{player.name}</div>
                         <div className="text-[10px] text-gray-500 font-mono mt-0.5">{player.address}</div>
-                      </div>
+                      </motion.div>
                     </td>
                     <td className="px-6 py-6 text-center">
                       <motion.span 

@@ -14,10 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ZeroFee Arena",
-  description: "The First AI-Native On-Chain Strategy Game",
+  title: "ZeroFee Arena | AI-Native Strategy",
+  description: "The First AI-Native On-Chain Strategy Game powered by GenLayer Intelligent Contracts.",
   icons: {
     icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 

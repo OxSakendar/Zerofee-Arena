@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Zap, Map, BrainCircuit } from 'lucide-react';
@@ -32,7 +32,8 @@ const MISSIONS = [
 ];
 
 export default function Arena() {
-  const { isConnected, address, connector } = useAccount();
+  const { isConnected, address, connector, chainId } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
   const router = useRouter();
   
   const [isPending, setIsPending] = useState(false);
@@ -49,18 +50,32 @@ export default function Arena() {
     
     try {
       setIsPending(true);
+      setMissionLog("Checking network status...");
+      
+      // Ensure we are on GenLayer Studio (61999)
+      if (chainId !== 61999) {
+        setMissionLog("Switching network to GenLayer Studio...");
+        try {
+          await switchChainAsync({ chainId: 61999 });
+        } catch (switchErr: any) {
+          throw new Error(`Please switch to GenLayer Studio network: ${switchErr.message}`);
+        }
+      }
+
       setMissionLog("Connecting to GenVM...");
       
       let provider: any;
       if (connector) {
         provider = await connector.getProvider();
       } else {
-        provider = window.ethereum;
+        provider = (window as any).ethereum;
       }
 
       if (!provider) {
         throw new Error("No wallet provider found. Please connect a wallet.");
       }
+
+      console.log("Initializing GenLayer client with:", { address, chainId });
 
       // Create GenLayer write client
       const writeClient = createClient({
@@ -69,15 +84,22 @@ export default function Arena() {
         provider: provider,
       });
 
-      // Prompt wallet connection to correct network if needed
-      await writeClient.connect("studionet");
+      // Prompt wallet connection to correct network if needed (genlayer-js internal logic)
+      // We already did this with wagmi, but it doesn't hurt to keep it if it handles snaps
+      try {
+        await writeClient.connect("studionet");
+      } catch (connErr: any) {
+        console.warn("writeClient.connect failed (might be expected if already connected):", connErr);
+      }
 
       setMissionLog("Awaiting on-chain transaction signature...");
 
       // Connect to the deployed GenLayer Studio contract
       const contractAddress = "0xBcBD1169E34799ac9143FD0C350ED06Edb701882";
 
-      // Dispatching on-chain Tx (TypeScript requires value property to be explicitly defined, so we pass 0n)
+      console.log("Calling contract:", contractAddress);
+
+      // Dispatching on-chain Tx
       const txHash = await writeClient.writeContract({
         address: contractAddress as `0x${string}`,
         functionName: "execute_ai_turn",
@@ -85,6 +107,7 @@ export default function Arena() {
         value: 0n,
       });
 
+      console.log("Transaction success!", txHash);
       setMissionLog(`Transaction dispatched! Hash: ${txHash.slice(0, 10)}...\nAwaiting GenVM consensus...`);
 
       // Mock delay to simulate network block time confirmation
@@ -100,8 +123,11 @@ export default function Arena() {
       );
       
     } catch (err: any) {
-      console.error(err);
-      setMissionLog(`Error: ${err.message || "Failed to dispatch transaction."}`);
+      console.error("Mission Initialization Error:", err);
+      // Detailed error reporting
+      let errorMessage = err.message || "Failed to dispatch transaction.";
+      if (err.data?.message) errorMessage += ` (${err.data.message})`;
+      setMissionLog(`Error: ${errorMessage}`);
     } finally {
       setIsPending(false);
     }

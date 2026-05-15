@@ -32,7 +32,7 @@ const MISSIONS = [
 ];
 
 export default function Arena() {
-  const { isConnected, address } = useAccount();
+  const { isConnected, address, connector } = useAccount();
   const router = useRouter();
   
   const [isPending, setIsPending] = useState(false);
@@ -51,15 +51,22 @@ export default function Arena() {
       setIsPending(true);
       setMissionLog("Connecting to GenVM...");
       
-      if (!window.ethereum) {
-        throw new Error("No wallet provider found. Please install MetaMask or similar.");
+      let provider: any;
+      if (connector) {
+        provider = await connector.getProvider();
+      } else {
+        provider = window.ethereum;
+      }
+
+      if (!provider) {
+        throw new Error("No wallet provider found. Please connect a wallet.");
       }
 
       // Create GenLayer write client
       const writeClient = createClient({
         chain: studionet,
         account: address as `0x${string}`,
-        provider: window.ethereum as any,
+        provider: provider,
       });
 
       // Prompt wallet connection to correct network if needed

@@ -78,9 +78,10 @@ export default function Arena() {
       console.log("Initializing GenLayer client with:", { address, chainId });
 
       // Create GenLayer write client
+      // Note: passing account as an object with address property to ensure compatibility with genlayer-js 1.1.8
       const writeClient = createClient({
         chain: studionet,
-        account: address as `0x${string}`,
+        account: { address } as any,
         provider: provider,
       });
 
@@ -128,6 +129,58 @@ export default function Arena() {
       let errorMessage = err.message || "Failed to dispatch transaction.";
       if (err.data?.message) errorMessage += ` (${err.data.message})`;
       setMissionLog(`Error: ${errorMessage}`);
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const handleRegisterPlayer = async () => {
+    if (!address) return;
+    
+    try {
+      setIsPending(true);
+      setMissionLog("Checking network status...");
+      
+      if (chainId !== 61999) {
+        setMissionLog("Switching network to GenLayer Studio...");
+        await switchChainAsync({ chainId: 61999 });
+      }
+
+      setMissionLog("Connecting to GenVM...");
+      
+      let provider: any;
+      if (connector) {
+        provider = await connector.getProvider();
+      } else {
+        provider = (window as any).ethereum;
+      }
+
+      const writeClient = createClient({
+        chain: studionet,
+        account: { address } as any,
+        provider: provider,
+      });
+
+      try {
+        await writeClient.connect("studionet");
+      } catch (e) {}
+
+      setMissionLog("Registering account on-chain...");
+
+      const contractAddress = "0xBcBD1169E34799ac9143FD0C350ED06Edb701882";
+
+      const txHash = await writeClient.writeContract({
+        address: contractAddress as `0x${string}`,
+        functionName: "register_player",
+        args: [address],
+        value: 0n,
+      });
+
+      setMissionLog(`Registration successful!\nTx: ${txHash.slice(0, 10)}...\nYou can now initialize missions.`);
+      
+    } catch (err: any) {
+      console.error("Registration Error:", err);
+      setMissionLog(`Registration Error: ${err.message || "Failed to register."}`);
     } finally {
       setIsPending(false);
     }
@@ -183,13 +236,22 @@ export default function Arena() {
             <div className="bg-black/40 border border-white/5 rounded p-4 mb-6 text-sm font-mono text-gray-300 min-h-[100px] flex items-center justify-center whitespace-pre-wrap text-left px-4">
               {missionLog}
             </div>
-            <button 
-              onClick={handleInitializeMission}
-              disabled={isPending}
-              className={`w-full md:w-auto px-8 py-4 bg-neon-purple text-white font-bold rounded transition-all shadow-[0_0_15px_rgba(176,38,255,0.3)] hover:shadow-[0_0_25px_rgba(176,38,255,0.6)] ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white hover:text-black'}`}
-            >
-              {isPending ? 'Processing...' : 'Initialize LLM Mission (0.0 GEN)'}
-            </button>
+            <div className="flex flex-col md:flex-row gap-4">
+              <button 
+                onClick={handleRegisterPlayer}
+                disabled={isPending}
+                className={`flex-1 px-6 py-4 border-2 border-neon-blue text-neon-blue font-bold rounded transition-all hover:bg-neon-blue hover:text-black ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Register Account
+              </button>
+              <button 
+                onClick={handleInitializeMission}
+                disabled={isPending}
+                className={`flex-[2] px-8 py-4 bg-neon-purple text-white font-bold rounded transition-all shadow-[0_0_15px_rgba(176,38,255,0.3)] hover:shadow-[0_0_25px_rgba(176,38,255,0.6)] ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white hover:text-black'}`}
+              >
+                {isPending ? 'Processing...' : 'Initialize LLM Mission (0.0 GEN)'}
+              </button>
+            </div>
           </div>
         </div>
       </main>

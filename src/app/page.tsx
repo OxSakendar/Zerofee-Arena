@@ -1,13 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Cpu, Zap, Globe, Coins, Menu, X as CloseIcon } from "lucide-react";
+import { Shield, Cpu, Zap, Globe, Coins, Menu, X as CloseIcon, Brain } from "lucide-react";
 import Link from "next/link";
 import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { WorldMap } from "@/components/WorldMap";
+import { Leaderboard } from "@/components/Leaderboard";
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -141,30 +142,40 @@ export default function Home() {
         {/* World Map Modal */}
         <WorldMap isOpen={isMapOpen} onClose={() => setIsMapOpen(false)} />
 
+        {/* Leaderboard Section */}
+        <Leaderboard />
+
         {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-32">
-          {[
-            { icon: Coins, title: "Zero Gas Fees", desc: "Play without friction. All transactions are meta-sponsored, giving you a true Web2 experience with Web3 ownership.", color: "text-neon-pink", border: "border-neon-pink/20" },
-            { icon: Cpu, title: "Intelligent Contracts", desc: "NPCs and missions are powered by on-chain LLMs via GenLayer, reacting dynamically to internet data and player choices.", color: "text-neon-blue", border: "border-neon-blue/20" },
-            { icon: Shield, title: "Optimistic Democracy", desc: "Fair and secure gameplay. All complex AI reasoning is validated through GenLayer's decentralized consensus mechanism.", color: "text-neon-purple", border: "border-neon-purple/20" }
-          ].map((feature, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 + i * 0.1 }}
-              className={`glass-card p-8 rounded-xl border ${feature.border} hover:-translate-y-2 transition-transform duration-300`}
-            >
-              <div className={`w-12 h-12 rounded-lg bg-black/50 flex items-center justify-center mb-6 border border-white/5`}>
-                <feature.icon className={`w-6 h-6 ${feature.color}`} />
-              </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-gray-400 leading-relaxed">
-                {feature.desc}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+        <section id="features" className="py-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { icon: Coins, title: "Zero Gas Fees", desc: "Play without friction. All transactions are meta-sponsored, giving you a true Web2 experience with Web3 ownership.", color: "text-neon-pink", border: "border-neon-pink/20" },
+              { icon: Cpu, title: "Intelligent Contracts", desc: "NPCs and missions are powered by on-chain LLMs via GenLayer, reacting dynamically to internet data and player choices.", color: "text-neon-blue", border: "border-neon-blue/20" },
+              { icon: Shield, title: "Optimistic Democracy", desc: "Fair and secure gameplay. All complex AI reasoning is validated through GenLayer's decentralized consensus mechanism.", color: "text-neon-purple", border: "border-neon-purple/20" },
+              { icon: Brain, title: "AI-Native Governance", desc: "The game world evolves through player-driven AI proposals. LLMs process votes and automatically update game state logic.", color: "text-neon-green", border: "border-neon-green/20" },
+              { icon: Globe, title: "Dynamic Territories", desc: "Territory resources and power levels fluctuate based on real-world data feeds and internet-aware smart contracts.", color: "text-neon-yellow", border: "border-neon-yellow/20" },
+              { icon: Zap, title: "Self-Evolving NPCs", desc: "Encounter NPCs that remember your past actions. Their personalities and strategies evolve using persistent on-chain memory.", color: "text-neon-pink", border: "border-neon-pink/20" }
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className={`glass-card p-8 rounded-xl border ${feature.border} hover:-translate-y-2 transition-transform duration-300 group relative overflow-hidden`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className={`w-12 h-12 rounded-lg bg-black/50 flex items-center justify-center mb-6 border border-white/5`}>
+                  <feature.icon className={`w-6 h-6 ${feature.color}`} />
+                </div>
+                <h3 className="text-xl font-bold mb-3 group-hover:text-glow transition-all">{feature.title}</h3>
+                <p className="text-gray-400 leading-relaxed relative z-10 text-sm md:text-base">
+                  {feature.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   );

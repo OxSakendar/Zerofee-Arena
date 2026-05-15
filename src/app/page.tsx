@@ -6,11 +6,14 @@ import Link from "next/link";
 import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { WorldMap } from "@/components/WorldMap";
 
 export default function Home() {
   const { isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
   const router = useRouter();
+  const [isMapOpen, setIsMapOpen] = useState(false);
 
   const handleEnterArena = () => {
     if (!isConnected && openConnectModal) {
@@ -97,7 +100,10 @@ export default function Home() {
               <span className="text-xs text-neon-pink mt-3 font-semibold uppercase tracking-wider">0.0 GEN Required</span>
             </div>
             <div className="flex flex-col items-center">
-              <button className="px-8 py-4 rounded-sm glass text-white font-bold text-lg hover:bg-white/10 transition-colors flex items-center gap-2">
+              <button 
+                onClick={() => setIsMapOpen(true)}
+                className="px-8 py-4 rounded-sm glass text-white font-bold text-lg hover:bg-white/10 transition-colors flex items-center gap-2"
+              >
                 <Globe className="w-5 h-5 text-gray-400" />
                 View World Map
               </button>
@@ -105,6 +111,9 @@ export default function Home() {
             </div>
           </motion.div>
         </div>
+
+        {/* World Map Modal */}
+        <WorldMap isOpen={isMapOpen} onClose={() => setIsMapOpen(false)} />
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-32">

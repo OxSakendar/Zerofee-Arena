@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { WorldMap } from "@/components/WorldMap";
 import { Leaderboard } from "@/components/Leaderboard";
+import { PolicyModal, PolicyTab } from "@/components/PolicyModal";
+import { ContactModal } from "@/components/ContactModal";
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -16,6 +18,14 @@ export default function Home() {
   const router = useRouter();
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPolicyOpen, setIsPolicyOpen] = useState(false);
+  const [policyTab, setPolicyTab] = useState<PolicyTab>('terms');
+  const [isContactOpen, setIsContactOpen] = useState(false);
+
+  const openPolicy = (tab: PolicyTab) => {
+    setPolicyTab(tab);
+    setIsPolicyOpen(true);
+  };
 
   const handleEnterArena = () => {
     if (!isConnected && openConnectModal) {
@@ -48,7 +58,7 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
             <Link href="#features" className="hover:text-neon-blue transition-colors">Features</Link>
             <Link href="#leaderboard" className="hover:text-neon-purple transition-colors">Leaderboard</Link>
-            <Link href="#docs" className="hover:text-neon-pink transition-colors">Docs</Link>
+            <button onClick={() => setIsContactOpen(true)} className="hover:text-neon-pink transition-colors cursor-pointer bg-transparent border-0 p-0 font-medium">Contact Us</button>
           </div>
 
           <div className="flex items-center gap-4">
@@ -73,7 +83,12 @@ export default function Home() {
           <div className="px-6 py-8 flex flex-col gap-6 text-lg font-medium">
             <Link href="#features" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-neon-blue transition-colors">Features</Link>
             <Link href="#leaderboard" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-neon-purple transition-colors">Leaderboard</Link>
-            <Link href="#docs" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-neon-pink transition-colors">Docs</Link>
+            <button 
+              onClick={() => { setIsMenuOpen(false); setIsContactOpen(true); }} 
+              className="text-left text-gray-300 hover:text-neon-pink transition-colors bg-transparent border-0 p-0 font-medium"
+            >
+              Contact Us
+            </button>
           </div>
         </motion.div>
       </nav>
@@ -177,6 +192,25 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-white/5 bg-black/40 backdrop-blur-md py-12 mt-20">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center justify-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-400 font-medium">
+            <button onClick={() => openPolicy('terms')} className="hover:text-neon-blue transition-colors cursor-pointer bg-transparent border-0 p-0 font-medium">Terms of Service</button>
+            <button onClick={() => openPolicy('privacy')} className="hover:text-neon-purple transition-colors cursor-pointer bg-transparent border-0 p-0 font-medium">Privacy Policy</button>
+            <button onClick={() => openPolicy('cookie')} className="hover:text-neon-pink transition-colors cursor-pointer bg-transparent border-0 p-0 font-medium">Cookie Policy</button>
+            <button onClick={() => setIsContactOpen(true)} className="hover:text-neon-green transition-colors cursor-pointer flex items-center gap-1 bg-transparent border-0 p-0 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+              Contact Us
+            </button>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modals */}
+      <PolicyModal isOpen={isPolicyOpen} onClose={() => setIsPolicyOpen(false)} initialTab={policyTab} />
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </div>
   );
 }

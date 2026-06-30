@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: path.resolve(process.cwd()),
-  },
+  outputFileTracingRoot: path.resolve(__dirname),
   serverExternalPackages: [
     "lightningcss",
     "@tailwindcss/postcss",

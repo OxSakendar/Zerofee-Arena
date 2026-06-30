@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Brain, Target, Activity } from 'lucide-react';
+import { Trophy, Brain, Activity } from 'lucide-react';
 
 const LEADERBOARD_DATA = [
   { id: 1, name: "NexusPrime", address: "0x71C...4f2D", score: 14520, iq: 188, accuracy: "99.2%", status: "Legendary" },

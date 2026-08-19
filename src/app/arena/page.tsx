@@ -77,7 +77,7 @@ export default function Arena() {
       setMissionLog("Awaiting on-chain transaction signature...");
 
       // Connect to the deployed GenLayer Studio contract
-      const contractAddress = "0xBcBD1169E34799ac9143FD0C350ED06Edb701882";
+      const contractAddress = "0xb4412590158f0CceEc98ebffAFf99C851Ab6703c";
 
       // Dispatching on-chain Tx (TypeScript requires value property to be explicitly defined, so we pass 0n)
       const txHash = await writeClient.writeContract({

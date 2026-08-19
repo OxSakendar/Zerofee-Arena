@@ -130,9 +130,6 @@ Zerofee-Arena/
    ```bash
    npm run dev
    ```
-   *(On Windows PowerShell, use `npm.cmd run dev`)*
-
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 

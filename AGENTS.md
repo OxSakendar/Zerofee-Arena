@@ -29,10 +29,11 @@ The frontend interacts with the **GenLayer Studio** network.
 ---
 
 ## 📜 Smart Contracts (`/contracts`)
-* **`arena.py`**: A GenLayer python-based smart contract (`ZeroFeeArena`) simulating decentralized AI consensus.
+* **`arena.py`**: A GenLayer Python Intelligent Contract (`ZeroFeeArena`) utilizing non-deterministic LLM evaluation and consensus.
   * Extends `gl.Contract` class.
-  * Public views: `get_player_territories(player_id)`
-  * Public writes: `register_player(player_id)`, `execute_ai_turn(player_id, prompt)`
+  * Uses `gl.nondet.exec_prompt` and `gl.eq_principle.strict_eq` for non-deterministic LLM execution across GenLayer network validators.
+  * Public views: `get_player_territories(player_id)`, `get_player_score(player_id)`, `get_last_outcome(player_id)`
+  * Public writes: `register_player(player_id)`, `execute_ai_turn(player_id, prompt)`, `evaluate_battle(attacker_id, defender_id, strategy)`
 
 ---
 

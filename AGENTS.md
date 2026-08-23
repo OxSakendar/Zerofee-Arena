@@ -24,7 +24,7 @@ The frontend interacts with the **GenLayer Studio** network.
 * **Chain ID**: `61999`
 * **RPC URL**: `https://studio.genlayer.com/api`
 * **Block Explorer**: `https://explorer-studio.genlayer.com/`
-* **Contract Address**: `0xb4412590158f0CceEc98ebffAFf99C851Ab6703c`
+* **Contract Address**: `0x32F69599A8Ea389ba856BE946dC8e28BA66B9E26`
 * **Wallet Connect Project ID**: Pre-configured in `src/app/providers.tsx`.
 
 ---

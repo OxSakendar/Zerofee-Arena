@@ -9,9 +9,6 @@ class ZeroFeeArena(gl.Contract):
     territories_controlled: u256
     
     def __init__(self):
-        self.players = TreeMap()
-        self.player_scores = TreeMap()
-        self.last_mission_outcomes = TreeMap()
         self.territories_controlled = u256(0)
 
     @gl.public.view
@@ -51,12 +48,26 @@ class ZeroFeeArena(gl.Contract):
             formatted_prompt = (
                 f"You are the GenLayer AI Game Master for ZeroFee Arena, a cyberpunk strategy game. "
                 f"Evaluate the player '{player_id}' performing action: '{prompt}'. "
-                f"Respond ONLY with a JSON object in this exact format: "
+                f"Respond ONLY with a JSON object: "
                 f'{{"success": true, "territories_gained": 1, "score_delta": 50, '
                 f'"story": "A vivid 2-sentence cyberpunk mission narrative of what happened."}}'
             )
             raw_response = gl.nondet.exec_prompt(formatted_prompt, response_format="json")
-            return raw_response
+            try:
+                data = json.loads(raw_response)
+                return json.dumps({
+                    "success": bool(data.get("success", True)),
+                    "territories_gained": int(data.get("territories_gained", 1)),
+                    "score_delta": int(data.get("score_delta", 50)),
+                    "story": str(data.get("story", "AI Mission Completed Successfully."))
+                })
+            except Exception:
+                return json.dumps({
+                    "success": True,
+                    "territories_gained": 1,
+                    "score_delta": 50,
+                    "story": "AI Mission Completed Successfully."
+                })
 
         # GenLayer Consensus Mechanism: Validators run the non-deterministic LLM evaluation
         # and reach consensus on the output via the Equivalence Principle.

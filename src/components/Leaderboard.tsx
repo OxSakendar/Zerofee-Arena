@@ -1,58 +1,81 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Brain, Activity } from 'lucide-react';
+import { Trophy, Brain, Activity, RefreshCw, Swords } from 'lucide-react';
+import { createClient } from 'genlayer-js';
+import { studionet as studioChain } from 'genlayer-js/chains';
 
-const LEADERBOARD_DATA = [
-  { id: 1, name: "NexusPrime", address: "0x71C...4f2D", score: 14520, iq: 188, accuracy: "99.2%", status: "Legendary" },
-  { id: 2, name: "CypherGhost", address: "0x3A2...9bE1", score: 12840, iq: 175, accuracy: "98.5%", status: "Master" },
-  { id: 3, name: "NeonOracle", address: "0xF94...2c1A", score: 11200, iq: 182, accuracy: "97.8%", status: "Master" },
-  { id: 4, name: "VoidRunner", address: "0x2B1...7d3C", score: 9850, iq: 164, accuracy: "96.2%", status: "Elite" },
-  { id: 5, name: "TitanCore", address: "0xE55...0a4F", score: 8420, iq: 158, accuracy: "95.5%", status: "Elite" },
+const CONTRACT_ADDRESS = "0x32F69599A8Ea389ba856BE946dC8e28BA66B9E26";
+
+export interface LeaderboardAgent {
+  address: string;
+  score: number;
+  territories: number;
+  last_outcome?: string;
+  name?: string;
+  iq?: number;
+  accuracy?: string;
+  status?: string;
+}
+
+interface LeaderboardProps {
+  onChallengeAgent?: (address: string) => void;
+}
+
+const SEED_FALLBACK_AGENTS: LeaderboardAgent[] = [
+  { address: "0x71c49b2000000000000000000000000000004f2d", name: "NexusPrime", score: 1450, territories: 12, iq: 188, accuracy: "99.2%", status: "Legendary" },
+  { address: "0x3a29be1000000000000000000000000000009be1", name: "CypherGhost", score: 1280, territories: 9, iq: 175, accuracy: "98.5%", status: "Master" },
+  { address: "0xf942c1a000000000000000000000000000002c1a", name: "NeonOracle", score: 1120, territories: 7, iq: 182, accuracy: "97.8%", status: "Master" },
+  { address: "0x2b17d3c000000000000000000000000000007d3c", name: "VoidRunner", score: 980, territories: 5, iq: 164, accuracy: "96.2%", status: "Elite" },
 ];
 
-const AGENT_NAMES = [
-  "NexusPrime", "CypherGhost", "NeonOracle", "VoidRunner", "TitanCore", 
-  "AetherMind", "GlitchWraith", "SpectreNet", "CircuitKing", "DataDragon",
-  "VectorSoul", "QuantumPulse", "NeuralBlade", "ShadowCode", "BinaryStar"
-];
+export const Leaderboard: React.FC<LeaderboardProps> = ({ onChallengeAgent }) => {
+  const [agents, setAgents] = useState<LeaderboardAgent[]>(SEED_FALLBACK_AGENTS);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isContractSynced, setIsContractSynced] = useState(false);
 
-export const Leaderboard = () => {
-  const [leaderboard, setLeaderboard] = React.useState(LEADERBOARD_DATA);
+  const fetchContractLeaderboard = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const readClient = createClient({ chain: studioChain });
+      const rawRes = await readClient.readContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        functionName: "get_leaderboard",
+        args: [],
+      });
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setLeaderboard(prev => prev.map(player => {
-        // Randomly update 40% of players for more visual activity
-        if (Math.random() > 0.4) return player;
-
-        const scoreChange = Math.floor(Math.random() * 15) - 3; // -3 to +12
-        const iqChange = Math.random() > 0.8 ? (Math.random() > 0.5 ? 1 : -1) : 0;
-        
-        // Randomly fluctuate accuracy by +/- 0.1%
-        const currentAcc = parseFloat(player.accuracy);
-        const accChange = (Math.random() * 0.2 - 0.1);
-        const newAcc = Math.min(99.9, Math.max(90.0, currentAcc + accChange)).toFixed(1) + "%";
-
-        // Occasionally change the name (simulating new agent rise)
-        const shouldChangeName = Math.random() > 0.95;
-        const newName = shouldChangeName 
-          ? AGENT_NAMES[Math.floor(Math.random() * AGENT_NAMES.length)]
-          : player.name;
-        
-        return {
-          ...player,
-          name: newName,
-          score: Math.max(1000, player.score + scoreChange),
-          iq: Math.min(200, Math.max(100, player.iq + iqChange)),
-          accuracy: newAcc
-        };
-      }).sort((a, b) => b.score - a.score));
-    }, 3000);
-
-    return () => clearInterval(interval);
+      if (typeof rawRes === "string") {
+        const parsed = JSON.parse(rawRes);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const formatted: LeaderboardAgent[] = parsed.map((item: any, idx: number) => {
+            const shortAddr = item.address ? `${item.address.slice(0, 6)}...${item.address.slice(-4)}` : `Agent #${idx + 1}`;
+            return {
+              address: item.address || "",
+              name: shortAddr,
+              score: Number(item.score || 100),
+              territories: Number(item.territories || 1),
+              last_outcome: item.last_outcome || "Active Agent",
+              iq: 140 + (Number(item.score || 100) % 50),
+              accuracy: `${Math.min(99.9, 90 + (Number(item.score || 100) % 10)).toFixed(1)}%`,
+              status: item.score > 300 ? "Dominator" : item.score > 150 ? "Tactician" : "Initiate"
+            };
+          });
+          setAgents(formatted);
+          setIsContractSynced(true);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch contract leaderboard, using seed fallback:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchContractLeaderboard();
+  }, [fetchContractLeaderboard]);
 
   return (
     <section id="leaderboard" className="py-24 relative">
@@ -65,18 +88,31 @@ export const Leaderboard = () => {
             className="flex items-center gap-3 px-4 py-2 rounded-full glass border-neon-blue/30 text-neon-blue mb-4"
           >
             <Trophy className="w-4 h-4" />
-            <span className="text-xs font-bold tracking-widest uppercase">Global Rankings</span>
+            <span className="text-xs font-bold tracking-widest uppercase">Global Contract Rankings</span>
             <div className="flex items-center gap-1.5 ml-2 border-l border-white/10 pl-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse" />
-              <span className="text-[10px] font-bold text-neon-pink tracking-tighter uppercase">Live Feed</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isContractSynced ? 'bg-neon-green' : 'bg-neon-pink'} animate-pulse`} />
+              <span className={`text-[10px] font-bold ${isContractSynced ? 'text-neon-green' : 'text-neon-pink'} tracking-tighter uppercase`}>
+                {isContractSynced ? "Contract Live" : "On-Chain Sync"}
+              </span>
             </div>
           </motion.div>
+          
           <h2 className="text-4xl md:text-5xl font-black text-center mb-4">
             Intelligent <span className="text-glow">Leaderboard</span>
           </h2>
-          <p className="text-gray-400 text-center max-w-2xl">
-            Rankings are computed in real-time by the GenLayer Intelligent Consensus based on agent performance, logical complexity, and territory dominance.
+          
+          <p className="text-gray-400 text-center max-w-2xl mb-6">
+            Rankings are computed authoritatively on-chain by GenLayer Intelligent Contracts based on agent territory dominance, AI strategy turns, and PvP combat victories.
           </p>
+
+          <button
+            onClick={fetchContractLeaderboard}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded glass border border-neon-blue/30 text-neon-blue hover:bg-neon-blue hover:text-black transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Syncing Contract State...' : 'Refresh On-Chain Rankings'}
+          </button>
         </div>
 
         <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
@@ -85,7 +121,8 @@ export const Leaderboard = () => {
               <thead>
                 <tr className="bg-white/5 border-b border-white/5">
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400">Rank</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400">Agent Name</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400">Agent Address</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400 text-center">Territories</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <Brain className="w-3 h-3 text-neon-pink" />
@@ -99,16 +136,17 @@ export const Leaderboard = () => {
                     </div>
                   </th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400 text-right">Power Score</th>
+                  {onChallengeAgent && <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400 text-center">Action</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {leaderboard.map((player, index) => (
+                {agents.map((player, index) => (
                   <motion.tr
-                    key={player.id}
+                    key={player.address || index}
                     layout
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: 0.4 }}
                     className="group hover:bg-white/5 transition-colors cursor-default"
                   >
                     <td className="px-6 py-6 font-mono">
@@ -119,54 +157,54 @@ export const Leaderboard = () => {
                           index === 2 ? 'bg-orange-500/20 border-orange-500 text-orange-500' :
                           'bg-white/5 border-white/10 text-gray-400'
                         }`}>
-                          {player.id}
+                          {index + 1}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-6">
-                      <motion.div
-                        key={player.name}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4 }}
-                      >
-                        <div className="font-bold text-white group-hover:text-neon-blue transition-colors">{player.name}</div>
-                        <div className="text-[10px] text-gray-500 font-mono mt-0.5">{player.address}</div>
-                      </motion.div>
+                      <div>
+                        <div className="font-bold text-white group-hover:text-neon-blue transition-colors font-mono">
+                          {player.name || player.address}
+                        </div>
+                        <div className="text-[10px] text-gray-500 font-mono mt-0.5 max-w-[200px] truncate">
+                          {player.address}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-6 text-center">
-                      <motion.span 
-                        key={player.iq}
-                        initial={{ opacity: 0.5, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-neon-pink font-mono font-bold text-lg inline-block"
-                      >
+                      <span className="text-neon-blue font-bold font-mono text-base">
+                        {player.territories}
+                      </span>
+                    </td>
+                    <td className="px-6 py-6 text-center">
+                      <span className="text-neon-pink font-mono font-bold text-lg inline-block">
                         {player.iq}
-                      </motion.span>
+                      </span>
                     </td>
                     <td className="px-6 py-6 text-center">
-                      <motion.span 
-                        key={player.accuracy}
-                        initial={{ opacity: 0.5 }}
-                        animate={{ opacity: 1 }}
-                        className="text-neon-blue font-mono inline-block"
-                      >
+                      <span className="text-neon-blue font-mono inline-block">
                         {player.accuracy}
-                      </motion.span>
+                      </span>
                     </td>
                     <td className="px-6 py-6 text-right">
                       <div className="flex flex-col items-end">
-                        <motion.span 
-                          key={player.score}
-                          initial={{ opacity: 0.5, y: -2 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-white font-black text-xl tracking-tighter"
-                        >
+                        <span className="text-white font-black text-xl tracking-tighter">
                           {player.score.toLocaleString()}
-                        </motion.span>
+                        </span>
                         <span className="text-[10px] text-neon-purple font-bold uppercase tracking-widest">{player.status}</span>
                       </div>
                     </td>
+                    {onChallengeAgent && (
+                      <td className="px-6 py-6 text-center">
+                        <button
+                          onClick={() => onChallengeAgent(player.address)}
+                          className="px-3 py-1.5 text-xs font-bold rounded bg-neon-pink/10 border border-neon-pink/40 text-neon-pink hover:bg-neon-pink hover:text-black transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Swords className="w-3.5 h-3.5" />
+                          Challenge
+                        </button>
+                      </td>
+                    )}
                   </motion.tr>
                 ))}
               </tbody>
@@ -180,3 +218,4 @@ export const Leaderboard = () => {
     </section>
   );
 };
+

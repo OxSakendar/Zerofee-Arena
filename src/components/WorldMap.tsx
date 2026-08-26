@@ -1,44 +1,78 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Map as MapIcon, Target, Users, Shield } from 'lucide-react';
+import { X, Map as MapIcon, Target, Users, Shield, RefreshCw, Swords } from 'lucide-react';
 import Image from 'next/image';
+import { createClient } from 'genlayer-js';
+import { studionet as studioChain } from 'genlayer-js/chains';
+
+const CONTRACT_ADDRESS = "0x32F69599A8Ea389ba856BE946dC8e28BA66B9E26";
+
+export interface SectorNode {
+  id: string;
+  name: string;
+  x: string;
+  y: string;
+  controller: string;
+  territories: number;
+  score: number;
+  status: string;
+}
 
 interface WorldMapProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelectTarget?: (address: string) => void;
 }
 
-export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
-  const [activeAgents, setActiveAgents] = useState(1249);
-  const [networkStability, setNetworkStability] = useState(98.4);
+const DEFAULT_SECTORS: SectorNode[] = [
+  { id: 'neo-tokyo', name: 'Neo Tokyo Sector', x: '75%', y: '35%', controller: '', territories: 1, score: 100, status: 'Neutral' },
+  { id: 'under-london', name: 'Under London Grid', x: '45%', y: '25%', controller: '', territories: 1, score: 100, status: 'Neutral' },
+  { id: 'amazonia-hive', name: 'Amazonia Data Hive', x: '35%', y: '65%', controller: '', territories: 1, score: 100, status: 'Neutral' },
+  { id: 'arctic-vault', name: 'Arctic Seed Vault', x: '55%', y: '15%', controller: '', territories: 1, score: 100, status: 'Neutral' },
+  { id: 'orbital-station', name: 'Orbital Station Zero', x: '20%', y: '20%', controller: '', territories: 1, score: 100, status: 'Neutral' },
+  { id: 'shanghai-nexus', name: 'Shanghai Cyber Nexus', x: '80%', y: '50%', controller: '', territories: 1, score: 100, status: 'Neutral' },
+];
+
+export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose, onSelectTarget }) => {
+  const [sectors, setSectors] = useState<SectorNode[]>(DEFAULT_SECTORS);
+  const [activeAgents, setActiveAgents] = useState<number>(0);
+  const [totalTerritories, setTotalTerritories] = useState<number>(0);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const [showIntel, setShowIntel] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveAgents(prev => {
-        const change = Math.floor(Math.random() * 5) - 2;
-        return Math.max(1200, prev + change);
+  const fetchWorldState = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const readClient = createClient({ chain: studioChain });
+      const rawRes = await readClient.readContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        functionName: "get_world_sectors",
+        args: [],
       });
 
-      setNetworkStability(prev => {
-        const change = (Math.random() * 0.2 - 0.1);
-        const newVal = prev + change;
-        return Number(Math.min(99.9, Math.max(95.0, newVal)).toFixed(1));
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
+      if (typeof rawRes === "string") {
+        const data = JSON.parse(rawRes);
+        if (data && Array.isArray(data.sectors)) {
+          setSectors(data.sectors);
+          setActiveAgents(Number(data.total_agents || 0));
+          setTotalTerritories(Number(data.total_territories || 0));
+        }
+      }
+    } catch (err) {
+      console.warn("Error reading contract world sectors:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const sectors = [
-    { id: 'neo-tokyo', name: 'Neo Tokyo Sector', status: 'Controlled', power: 'High', x: '75%', y: '35%' },
-    { id: 'under-london', name: 'Under London Grid', status: 'Contested', power: 'Medium', x: '45%', y: '25%' },
-    { id: 'brazil-core', name: 'Amazonia Data Hive', status: 'Uncharted', power: 'Low', x: '35%', y: '65%' },
-    { id: 'arctic-vault', name: 'Arctic Seed Vault', status: 'Neutral', power: 'Max', x: '55%', y: '15%' },
-  ];
+  useEffect(() => {
+    if (isOpen) {
+      fetchWorldState();
+    }
+  }, [isOpen, fetchWorldState]);
 
   return (
     <AnimatePresence>
@@ -62,14 +96,24 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
             <div className="h-16 border-b border-white/5 glass flex items-center justify-between px-6 shrink-0 z-20">
               <div className="flex items-center gap-3">
                 <MapIcon className="w-5 h-5 text-neon-blue" />
-                <h2 className="text-sm md:text-xl font-bold tracking-widest text-glow uppercase">Global Territory Grid</h2>
+                <h2 className="text-sm md:text-xl font-bold tracking-widest text-glow uppercase">On-Chain Territory Grid</h2>
               </div>
-              <button 
-                onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors group"
-              >
-                <X className="w-6 h-6 text-gray-400 group-hover:text-white" />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={fetchWorldState}
+                  disabled={isLoading}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-neon-blue flex items-center gap-1.5 text-xs font-bold"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span className="hidden md:inline">Sync Contract</span>
+                </button>
+                <button 
+                  onClick={onClose}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors group"
+                >
+                  <X className="w-6 h-6 text-gray-400 group-hover:text-white" />
+                </button>
+              </div>
             </div>
 
             {/* Map Container */}
@@ -87,34 +131,46 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
                   {/* Overlay Grid */}
                   <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-20 pointer-events-none" />
                   
-                  {/* Interactive Nodes */}
+                  {/* Interactive Sector Nodes */}
                   {sectors.map((sector) => (
                     <motion.div
                       key={sector.id}
                       style={{ left: sector.x, top: sector.y }}
-                      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-20"
                       onMouseEnter={() => setHoveredSector(sector.id)}
                       onMouseLeave={() => setHoveredSector(null)}
                       onClick={() => setHoveredSector(hoveredSector === sector.id ? null : sector.id)}
                     >
                       <div className="relative">
-                        <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${sector.status === 'Controlled' ? 'bg-neon-blue' : sector.status === 'Contested' ? 'bg-neon-purple' : 'bg-gray-500'} animate-pulse shadow-[0_0_15px_rgba(0,243,255,0.5)]`} />
-                        <div className={`absolute inset-0 rounded-full border-2 ${sector.status === 'Controlled' ? 'border-neon-blue' : 'border-white/20'} animate-ping opacity-50`} />
+                        <div className={`w-4 h-4 md:w-5 md:h-5 rounded-full ${sector.controller ? 'bg-neon-blue' : 'bg-neon-purple'} animate-pulse shadow-[0_0_15px_rgba(0,243,255,0.5)]`} />
+                        <div className={`absolute inset-0 rounded-full border-2 ${sector.controller ? 'border-neon-blue' : 'border-white/20'} animate-ping opacity-50`} />
                         
                         {/* Tooltip */}
                         <AnimatePresence>
                           {hoveredSector === sector.id && (
                             <motion.div
                               initial={{ opacity: 0, y: 10, x: -50 }}
-                              animate={{ opacity: 1, y: -60, x: -50 }}
+                              animate={{ opacity: 1, y: -70, x: -50 }}
                               exit={{ opacity: 0, y: 10, x: -50 }}
-                              className="absolute z-30 w-32 md:w-48 glass p-2 md:p-3 rounded border border-neon-blue/40 pointer-events-none"
+                              className="absolute z-30 w-44 md:w-56 glass p-3 rounded border border-neon-blue/40 pointer-events-auto"
                             >
-                              <p className="text-[10px] md:text-xs font-bold text-neon-blue mb-1 uppercase tracking-tighter">{sector.name}</p>
-                              <div className="flex flex-col md:flex-row md:items-center justify-between text-[8px] md:text-[10px] text-gray-400 gap-1">
-                                <span>Status: {sector.status}</span>
-                                <span>Power: {sector.power}</span>
+                              <p className="text-xs font-bold text-neon-blue mb-1 uppercase tracking-tighter">{sector.name}</p>
+                              <div className="flex flex-col text-[10px] text-gray-300 gap-1 mb-2 font-mono">
+                                <span>Controller: {sector.controller ? `${sector.controller.slice(0, 6)}...${sector.controller.slice(-4)}` : "Unclaimed"}</span>
+                                <span>Score: {sector.score} pts | Terr: {sector.territories}</span>
                               </div>
+                              {sector.controller && onSelectTarget && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectTarget(sector.controller);
+                                    onClose();
+                                  }}
+                                  className="w-full py-1 bg-neon-pink/20 border border-neon-pink/50 text-neon-pink hover:bg-neon-pink hover:text-black font-bold text-[10px] rounded transition-colors flex items-center justify-center gap-1 uppercase"
+                                >
+                                  <Swords className="w-3 h-3" /> Assault Sector
+                                </button>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -125,43 +181,33 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
               </div>
 
               {/* Sidebar / Info - Desktop */}
-              <div className="absolute right-8 bottom-8 w-64 glass p-6 rounded-lg border border-white/10 hidden lg:block backdrop-blur-xl">
+              <div className="absolute right-8 bottom-8 w-64 glass p-6 rounded-lg border border-white/10 hidden lg:block backdrop-blur-xl z-20">
                 <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                   <Target className="w-4 h-4 text-neon-pink" />
-                  Live Intel
+                  Contract Intelligence
                 </h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-400 flex items-center gap-2">
-                      <Users className="w-3 h-3" />
-                      Active Agents
+                      <Users className="w-3 h-3 text-neon-blue" />
+                      Registered Agents
                     </span>
-                    <motion.span 
-                      key={activeAgents}
-                      initial={{ opacity: 0.5 }}
-                      animate={{ opacity: 1 }}
-                      className="text-neon-blue font-mono"
-                    >
-                      {activeAgents.toLocaleString()}
-                    </motion.span>
+                    <span className="text-neon-blue font-mono font-bold">
+                      {activeAgents}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-400 flex items-center gap-2">
-                      <Shield className="w-3 h-3" />
-                      Network Stability
+                      <Shield className="w-3 h-3 text-neon-purple" />
+                      Controlled Territories
                     </span>
-                    <motion.span 
-                      key={networkStability}
-                      initial={{ opacity: 0.5 }}
-                      animate={{ opacity: 1 }}
-                      className="text-neon-purple font-mono"
-                    >
-                      {networkStability}%
-                    </motion.span>
+                    <span className="text-neon-purple font-mono font-bold">
+                      {totalTerritories}
+                    </span>
                   </div>
                   <div className="h-px bg-white/5 my-2" />
-                  <p className="text-[10px] text-gray-500 italic">
-                    * All territory data is synced via GenLayer Intelligent Contracts in real-time.
+                  <p className="text-[10px] text-gray-400 italic">
+                    * World sectors map authoritatively to registered GenLayer Intelligent Contract player state.
                   </p>
                 </div>
               </div>
@@ -188,7 +234,7 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-bold text-white flex items-center gap-2">
                         <Target className="w-4 h-4 text-neon-pink" />
-                        Live Intel
+                        On-Chain Intel
                       </h3>
                       <button onClick={() => setShowIntel(false)}><X className="w-4 h-4 text-gray-400" /></button>
                     </div>
@@ -198,14 +244,14 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
                           <Users className="w-3 h-3" />
                           Agents
                         </span>
-                        <span className="text-lg text-neon-blue font-mono font-bold">{activeAgents.toLocaleString()}</span>
+                        <span className="text-lg text-neon-blue font-mono font-bold">{activeAgents}</span>
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-gray-400 uppercase tracking-widest flex items-center gap-2">
                           <Shield className="w-3 h-3" />
-                          Stability
+                          Territories
                         </span>
-                        <span className="text-lg text-neon-purple font-mono font-bold">{networkStability}%</span>
+                        <span className="text-lg text-neon-purple font-mono font-bold">{totalTerritories}</span>
                       </div>
                     </div>
                   </motion.div>
@@ -216,13 +262,10 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
             {/* Bottom Bar Controls */}
             <div className="h-14 border-t border-white/5 bg-black/40 flex items-center justify-center gap-4 md:gap-8 px-4 shrink-0 overflow-x-auto whitespace-nowrap scrollbar-hide">
                <div className="flex items-center gap-2 text-[8px] md:text-[10px] text-gray-400 uppercase tracking-widest">
-                  <span className="w-2 h-2 rounded-full bg-neon-blue" /> Controlled
+                  <span className="w-2 h-2 rounded-full bg-neon-blue" /> Controlled Sectors
                </div>
                <div className="flex items-center gap-2 text-[8px] md:text-[10px] text-gray-400 uppercase tracking-widest">
-                  <span className="w-2 h-2 rounded-full bg-neon-purple" /> Contested
-               </div>
-               <div className="flex items-center gap-2 text-[8px] md:text-[10px] text-gray-400 uppercase tracking-widest">
-                  <span className="w-2 h-2 rounded-full bg-gray-500" /> Neutral
+                  <span className="w-2 h-2 rounded-full bg-neon-purple" /> Contested Sectors
                </div>
             </div>
           </motion.div>
@@ -231,3 +274,4 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose }) => {
     </AnimatePresence>
   );
 };
+

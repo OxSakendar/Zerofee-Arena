@@ -109,13 +109,47 @@ export default function Arena() {
       const provider: any = connector ? await connector.getProvider() : (window as any).ethereum;
       if (!provider) throw new Error("No Web3 wallet provider detected. Please connect your wallet.");
 
+      // Ensure network is GenLayer Studio (61999)
+      try {
+        const chainIdHex = `0x${studioChain.id.toString(16)}`;
+        const currentChain = await provider.request({ method: 'eth_chainId' });
+        if (currentChain !== chainIdHex) {
+          try {
+            await provider.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: chainIdHex }],
+            });
+          } catch (switchError: any) {
+            if (switchError?.code === 4902 || switchError?.message?.includes('4902')) {
+              await provider.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: chainIdHex,
+                  chainName: studioChain.name,
+                  rpcUrls: studioChain.rpcUrls.default.http,
+                  nativeCurrency: studioChain.nativeCurrency,
+                  blockExplorerUrls: studioChain.blockExplorers ? [studioChain.blockExplorers.default.url] : [],
+                }],
+              });
+            }
+          }
+        }
+      } catch (netErr) {
+        console.warn("Network check warning:", netErr);
+      }
+
       const writeClient = createClient({
         chain: studioChain,
         account: address as `0x${string}`,
         provider: provider,
       });
 
-      await writeClient.connect("studionet");
+      // Try connecting snap if supported, swallow error for standard web3 wallets that lack wallet_getSnaps
+      try {
+        await writeClient.connect("studionet");
+      } catch (connectErr: any) {
+        console.warn("GenLayer snap connect skipped for standard Web3 wallet:", connectErr?.message || connectErr);
+      }
 
       // Execute on-chain transaction. Identity is authenticated via gl.message.sender inside contract!
       const txHash = await writeClient.writeContract({
@@ -167,13 +201,47 @@ export default function Arena() {
       const provider: any = connector ? await connector.getProvider() : (window as any).ethereum;
       if (!provider) throw new Error("No Web3 wallet provider detected.");
 
+      // Ensure network is GenLayer Studio (61999)
+      try {
+        const chainIdHex = `0x${studioChain.id.toString(16)}`;
+        const currentChain = await provider.request({ method: 'eth_chainId' });
+        if (currentChain !== chainIdHex) {
+          try {
+            await provider.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: chainIdHex }],
+            });
+          } catch (switchError: any) {
+            if (switchError?.code === 4902 || switchError?.message?.includes('4902')) {
+              await provider.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: chainIdHex,
+                  chainName: studioChain.name,
+                  rpcUrls: studioChain.rpcUrls.default.http,
+                  nativeCurrency: studioChain.nativeCurrency,
+                  blockExplorerUrls: studioChain.blockExplorers ? [studioChain.blockExplorers.default.url] : [],
+                }],
+              });
+            }
+          }
+        }
+      } catch (netErr) {
+        console.warn("Network check warning:", netErr);
+      }
+
       const writeClient = createClient({
         chain: studioChain,
         account: address as `0x${string}`,
         provider: provider,
       });
 
-      await writeClient.connect("studionet");
+      // Try connecting snap if supported, swallow error for standard web3 wallets that lack wallet_getSnaps
+      try {
+        await writeClient.connect("studionet");
+      } catch (connectErr: any) {
+        console.warn("GenLayer snap connect skipped for standard Web3 wallet:", connectErr?.message || connectErr);
+      }
 
       // Execute on-chain PvP battle evaluation. Attacker is gl.message.sender.
       const txHash = await writeClient.writeContract({

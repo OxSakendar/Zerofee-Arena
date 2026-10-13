@@ -6,7 +6,7 @@ import { Trophy, Brain, Activity, RefreshCw, Swords } from 'lucide-react';
 import { createClient } from 'genlayer-js';
 import { studionet as studioChain } from 'genlayer-js/chains';
 
-const CONTRACT_ADDRESS = "0x32F69599A8Ea389ba856BE946dC8e28BA66B9E26";
+const CONTRACT_ADDRESS = "0xbDa11A2C1b5695225F52EFcb56B7ba24CA5eb98c";
 
 export interface LeaderboardAgent {
   address: string;

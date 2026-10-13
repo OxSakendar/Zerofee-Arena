@@ -11,7 +11,7 @@ import { TransactionStatus, ExecutionResult } from 'genlayer-js/types';
 import { WorldMap } from "@/components/WorldMap";
 import { Leaderboard, LeaderboardAgent } from "@/components/Leaderboard";
 
-const CONTRACT_ADDRESS = "0x32F69599A8Ea389ba856BE946dC8e28BA66B9E26";
+const CONTRACT_ADDRESS = "0xbDa11A2C1b5695225F52EFcb56B7ba24CA5eb98c";
 
 type TabMode = 'mission' | 'battle';
 
@@ -144,18 +144,11 @@ export default function Arena() {
         provider: provider,
       });
 
-      // Try connecting snap if supported, swallow error for standard web3 wallets that lack wallet_getSnaps
-      try {
-        await writeClient.connect("studionet");
-      } catch (connectErr: any) {
-        console.warn("GenLayer snap connect skipped for standard Web3 wallet:", connectErr?.message || connectErr);
-      }
-
-      // Execute on-chain transaction. Identity is authenticated via gl.message.sender inside contract!
+      // Execute on-chain transaction directly via standard Web3 wallet (MetaMask, Rainbow, etc.)
       const txHash = await writeClient.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         functionName: "execute_ai_turn",
-        args: [finalPrompt],
+        args: [finalPrompt, address],
         value: 0n,
       });
 
@@ -169,6 +162,8 @@ export default function Arena() {
       const receipt = await readClient.waitForTransactionReceipt({
         hash: txHash as any,
         status: TransactionStatus.ACCEPTED,
+        retries: 40,
+        interval: 3000,
       });
 
       if (receipt.txExecutionResultName === ExecutionResult.FINISHED_WITH_ERROR) {
@@ -236,18 +231,11 @@ export default function Arena() {
         provider: provider,
       });
 
-      // Try connecting snap if supported, swallow error for standard web3 wallets that lack wallet_getSnaps
-      try {
-        await writeClient.connect("studionet");
-      } catch (connectErr: any) {
-        console.warn("GenLayer snap connect skipped for standard Web3 wallet:", connectErr?.message || connectErr);
-      }
-
-      // Execute on-chain PvP battle evaluation. Attacker is gl.message.sender.
+      // Execute on-chain PvP battle evaluation directly via standard Web3 wallet
       const txHash = await writeClient.writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         functionName: "evaluate_battle",
-        args: [targetDefender.trim(), finalStrategy],
+        args: [targetDefender.trim(), finalStrategy, address],
         value: 0n,
       });
 
@@ -261,6 +249,8 @@ export default function Arena() {
       const receipt = await readClient.waitForTransactionReceipt({
         hash: txHash as any,
         status: TransactionStatus.ACCEPTED,
+        retries: 40,
+        interval: 3000,
       });
 
       if (receipt.txExecutionResultName === ExecutionResult.FINISHED_WITH_ERROR) {

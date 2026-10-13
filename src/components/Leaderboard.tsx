@@ -6,7 +6,7 @@ import { Trophy, Brain, Activity, RefreshCw, Swords } from 'lucide-react';
 import { createClient } from 'genlayer-js';
 import { studionet as studioChain } from 'genlayer-js/chains';
 
-const CONTRACT_ADDRESS = "0xbDa11A2C1b5695225F52EFcb56B7ba24CA5eb98c";
+const CONTRACT_ADDRESS = "0x6F76F389BF3Cb94EF3F9A2EBefDa5EE5A83372DE";
 
 export interface LeaderboardAgent {
   address: string;
@@ -23,11 +23,17 @@ interface LeaderboardProps {
   onChallengeAgent?: (address: string) => void;
 }
 
+const KNOWN_AGENT_NAMES: Record<string, string> = {
+  "0x244c2d30ce86141179bb71612c59a0ae19205350": "NexusPrime",
+  "0x9d2a6416cc72041ac90825ae2b7aabc63a167a11": "CypherGhost",
+  "0xe598898b7fc86909432d9870548258ddfa044d21": "NeonOracle",
+};
+
 const SEED_FALLBACK_AGENTS: LeaderboardAgent[] = [
-  { address: "0x71c49b2000000000000000000000000000004f2d", name: "NexusPrime", score: 1450, territories: 12, iq: 188, accuracy: "99.2%", status: "Legendary" },
-  { address: "0x3a29be1000000000000000000000000000009be1", name: "CypherGhost", score: 1280, territories: 9, iq: 175, accuracy: "98.5%", status: "Master" },
-  { address: "0xf942c1a000000000000000000000000000002c1a", name: "NeonOracle", score: 1120, territories: 7, iq: 182, accuracy: "97.8%", status: "Master" },
-  { address: "0x2b17d3c000000000000000000000000000007d3c", name: "VoidRunner", score: 980, territories: 5, iq: 164, accuracy: "96.2%", status: "Elite" },
+  { address: "0x244c2d30ce86141179bb71612c59a0ae19205350", name: "NexusPrime", score: 130, territories: 2, iq: 188, accuracy: "99.2%", status: "Legendary" },
+  { address: "0x9d2a6416cc72041ac90825ae2b7aabc63a167a11", name: "CypherGhost", score: 130, territories: 2, iq: 175, accuracy: "98.5%", status: "Master" },
+  { address: "0xe598898b7fc86909432d9870548258ddfa044d21", name: "NeonOracle", score: 130, territories: 2, iq: 182, accuracy: "97.8%", status: "Master" },
+  { address: "0x2b17d3c000000000000000000000000000007d3c", name: "VoidRunner", score: 100, territories: 1, iq: 164, accuracy: "96.2%", status: "Elite" },
 ];
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({ onChallengeAgent }) => {
@@ -45,26 +51,25 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ onChallengeAgent }) =>
         args: [],
       });
 
-      if (typeof rawRes === "string") {
-        const parsed = JSON.parse(rawRes);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const formatted: LeaderboardAgent[] = parsed.map((item: any, idx: number) => {
-            const shortAddr = item.address ? `${item.address.slice(0, 6)}...${item.address.slice(-4)}` : `Agent #${idx + 1}`;
-            return {
-              address: item.address || "",
-              name: shortAddr,
-              score: Number(item.score || 100),
-              territories: Number(item.territories || 1),
-              last_outcome: item.last_outcome || "Active Agent",
-              iq: 140 + (Number(item.score || 100) % 50),
-              accuracy: `${Math.min(99.9, 90 + (Number(item.score || 100) % 10)).toFixed(1)}%`,
-              status: item.score > 300 ? "Dominator" : item.score > 150 ? "Tactician" : "Initiate"
-            };
-          });
-          setAgents(formatted);
-          setIsContractSynced(true);
-          return;
-        }
+      const parsed = typeof rawRes === "string" ? JSON.parse(rawRes) : rawRes;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const formatted: LeaderboardAgent[] = parsed.map((item: any, idx: number) => {
+          const rawAddr = (item.address || "").toLowerCase();
+          const friendlyName = KNOWN_AGENT_NAMES[rawAddr] || (rawAddr ? `${rawAddr.slice(0, 6)}...${rawAddr.slice(-4)}` : `Agent #${idx + 1}`);
+          return {
+            address: item.address || "",
+            name: friendlyName,
+            score: Number(item.score || 100),
+            territories: Number(item.territories || 1),
+            last_outcome: item.last_outcome || "Active Agent",
+            iq: 140 + (Number(item.score || 100) % 50),
+            accuracy: `${Math.min(99.9, 90 + (Number(item.score || 100) % 10)).toFixed(1)}%`,
+            status: item.score > 300 ? "Dominator" : item.score > 150 ? "Tactician" : "Initiate"
+          };
+        });
+        setAgents(formatted);
+        setIsContractSynced(true);
+        return;
       }
     } catch (err) {
       console.warn("Could not fetch contract leaderboard, using seed fallback:", err);

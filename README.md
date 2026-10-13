@@ -141,7 +141,7 @@ The application connects to **GenLayer Studio**:
 - **Chain ID**: `61999`
 - **RPC URL**: `https://studio.genlayer.com/api`
 - **Block Explorer**: [https://explorer-studio.genlayer.com/](https://explorer-studio.genlayer.com/)
-- **Contract Address**: `0xbDa11A2C1b5695225F52EFcb56B7ba24CA5eb98c`
+- **Contract Address**: `0x6F76F389BF3Cb94EF3F9A2EBefDa5EE5A83372DE`
 
 ---
 

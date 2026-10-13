@@ -141,11 +141,9 @@ class ZeroFeeArena(gl.Contract):
         def non_deterministic_ai_eval():
             formatted_prompt = (
                 f"You are the GenLayer AI Game Master for ZeroFee Arena, a cyberpunk strategy game. "
-                f"Evaluate agent '{sender}' performing strategy/action: '{clean_prompt}'. "
-                f"Assess whether the plan is sound, tactical, and plausible in a cyberpunk universe. "
-                f"Return ONLY valid JSON matching this schema exactly: "
-                f'{{"success": true, "territories_gained": 1, "score_delta": 30, '
-                f'"story": "2 sentence cyberpunk mission narrative describing tactical execution."}}'
+                f"Evaluate agent '{sender}' action: '{clean_prompt}'. "
+                f"Is this tactical action sound and plausible in a cyberpunk universe? "
+                f"Respond ONLY with a JSON object: {{\"success\": true}}"
             )
             raw_response = gl.nondet.exec_prompt(formatted_prompt, response_format="json")
             try:
@@ -157,57 +155,15 @@ class ZeroFeeArena(gl.Contract):
                     data = {}
 
                 is_success = bool(data.get("success", True))
-                tg = int(data.get("territories_gained", 1))
-                sd = int(data.get("score_delta", 30))
-                story_text = str(data.get("story", "")).strip()
-
-                # Rule enforcement: cap boundaries
-                if tg < 0:
-                    tg = 0
-                if tg > 1:
-                    tg = 1
-                
-                if sd > 50:
-                    sd = 50
-                if sd < -30:
-                    sd = -30
-
-                if not story_text:
-                    story_text = "Mission completed under GenVM validator surveillance."
-
-                if not is_success:
-                    tg = 0
-                    if sd > 0:
-                        sd = -15
-
-                return json.dumps({
-                    "success": is_success,
-                    "territories_gained": tg,
-                    "score_delta": sd,
-                    "story": story_text
-                })
+                return "SUCCESS" if is_success else "FAILURE"
             except Exception:
-                # Rule-bound fallback: Parsing failure means safe default outcome
-                return json.dumps({
-                    "success": True,
-                    "territories_gained": 1,
-                    "score_delta": 25,
-                    "story": "Tactical breach executed successfully under GenVM surveillance."
-                })
+                return "SUCCESS"
 
-        # GenLayer Consensus: Equivalence principle strict equality check
-        validated_json_str = gl.eq_principle.strict_eq(non_deterministic_ai_eval)
-        if isinstance(validated_json_str, dict):
-            result_data = validated_json_str
-        elif isinstance(validated_json_str, str):
-            result_data = json.loads(validated_json_str)
-        else:
-            result_data = {}
+        outcome = gl.eq_principle.strict_eq(non_deterministic_ai_eval)
+        success = (outcome == "SUCCESS")
 
-        success = bool(result_data.get("success", True))
-        territories_gained = int(result_data.get("territories_gained", 1))
-        score_delta = int(result_data.get("score_delta", 25))
-        story = result_data.get("story", "Mission complete.")
+        territories_gained = 1 if success else 0
+        score_delta = 30 if success else -10
 
         # Update contract state based on consensus outcome
         current_territories = self.players.get(sender, u256(1))
@@ -226,7 +182,14 @@ class ZeroFeeArena(gl.Contract):
             else:
                 self.player_scores[sender] = u256(0)
 
-        formatted_outcome = f"[AI CONSENSUS VERIFIED]\nOutcome: {'SUCCESS' if success else 'FAILURE'}\nTerritories Gained: +{territories_gained}\nScore Delta: {score_delta:+d}\nStory: {story}"
+        story_text = (
+            f"Under neon-lit rain, Agent {sender[:8]} breached sector defenses with '{clean_prompt}', "
+            f"securing core network terminal and expanding strategic dominion."
+            if success else
+            f"Tactical assault with '{clean_prompt}' met heavy corporate ICE counter-measures. Sector held."
+        )
+
+        formatted_outcome = f"[AI CONSENSUS VERIFIED]\nOutcome: {'SUCCESS' if success else 'FAILURE'}\nTerritories Gained: +{territories_gained}\nScore Delta: {score_delta:+d}\nStory: {story_text}"
         self.last_mission_outcomes[sender] = formatted_outcome
 
         return formatted_outcome
@@ -251,7 +214,6 @@ class ZeroFeeArena(gl.Contract):
             return error_msg
 
         if defender not in self.players:
-            # Auto-register defender with starting stats if newly challenged
             self._internal_register(defender)
 
         att_terrs = self.players.get(attacker, u256(1))
@@ -263,12 +225,11 @@ class ZeroFeeArena(gl.Contract):
 
         def battle_ai_eval():
             prompt = (
-                f"You are the GenLayer AI Battle Judge. Resolve a cyberpunk territory combat between "
-                f"Attacker '{attacker}' (Territories: {att_terrs}, Score: {att_score}) "
-                f"and Defender '{defender}' (Territories: {def_terrs}, Score: {def_score}). "
+                f"You are the GenLayer AI Battle Judge. Attacker '{attacker}' (Territories: {att_terrs}, Score: {att_score}) "
+                f"launches strategic cyber assault against Defender '{defender}' (Territories: {def_terrs}, Score: {def_score}). "
                 f"Attacker Strategy: '{clean_strat}'. "
-                f"Evaluate tactical advantage and return ONLY JSON: "
-                f'{{"winner": "attacker", "reasoning": "1 sentence battle breakdown.", "score_transfer": 25}}'
+                f"Which combatant gains tactical victory? "
+                f"Return ONLY valid JSON: {{\"winner\": \"attacker\"}} or {{\"winner\": \"defender\"}}"
             )
             raw_res = gl.nondet.exec_prompt(prompt, response_format="json")
             try:
@@ -280,36 +241,14 @@ class ZeroFeeArena(gl.Contract):
                     b_data = {}
 
                 win = str(b_data.get("winner", "attacker")).lower()
-                if win not in ["attacker", "defender"]:
-                    win = "attacker"
-                reason = str(b_data.get("reasoning", "Tactical superiority achieved.")).strip()
-                st = int(b_data.get("score_transfer", 20))
-                if st < 5:
-                    st = 5
-                if st > 40:
-                    st = 40
-                return json.dumps({"winner": win, "reasoning": reason, "score_transfer": st})
+                return "attacker" if "attacker" in win else "defender"
             except Exception:
-                return json.dumps({
-                    "winner": "attacker",
-                    "reasoning": "Assault vector penetrated defender defenses.",
-                    "score_transfer": 20
-                })
+                return "attacker"
 
-        battle_result_str = gl.eq_principle.strict_eq(battle_ai_eval)
-        if isinstance(battle_result_str, dict):
-            battle_data = battle_result_str
-        elif isinstance(battle_result_str, str):
-            battle_data = json.loads(battle_result_str)
-        else:
-            battle_data = {}
-
-        winner = battle_data.get("winner", "attacker")
-        reasoning = battle_data.get("reasoning", "Battle resolved by GenVM consensus.")
-        score_transfer = u256(battle_data.get("score_transfer", 20))
+        winner = gl.eq_principle.strict_eq(battle_ai_eval)
+        score_transfer = u256(25)
 
         if winner == "attacker":
-            # Transfer 1 territory from defender if defender has more than 1
             if def_terrs > u256(1):
                 self.players[defender] = def_terrs - u256(1)
                 self.players[attacker] = att_terrs + u256(1)
@@ -319,21 +258,19 @@ class ZeroFeeArena(gl.Contract):
                 self.territories_controlled += u256(1)
                 terrs_stolen = 1
 
-            # Transfer score
             actual_st = min(def_score, score_transfer)
             self.player_scores[defender] = def_score - actual_st
             self.player_scores[attacker] = att_score + actual_st
 
-            outcome = f"[VICTORY] Attacker {attacker[:8]} conquered sector from {defender[:8]}! Captured: +{terrs_stolen} territory, +{actual_st} score. Detail: {reasoning}"
-            def_outcome = f"[DEFENSE BREACHED] Agent {attacker[:8]} seized sector from you. Detail: {reasoning}"
+            outcome = f"[VICTORY] Attacker {attacker[:8]} conquered sector from {defender[:8]}! Captured: +{terrs_stolen} territory, +{actual_st} score. Detail: High-yield '{clean_strat}' shattered defender grid."
+            def_outcome = f"[DEFENSE BREACHED] Agent {attacker[:8]} seized sector from you. Detail: High-yield assault breached firewall."
         else:
-            # Defender won
             actual_st = min(att_score, score_transfer)
             self.player_scores[attacker] = att_score - actual_st
             self.player_scores[defender] = def_score + actual_st
 
-            outcome = f"[DEFEAT] Defender {defender[:8]} repelled assault by {attacker[:8]}. Lost: -{actual_st} score. Detail: {reasoning}"
-            def_outcome = f"[DEFENSE SUCCESSFUL] Successfully repelled assault by Agent {attacker[:8]}. Earned: +{actual_st} score. Detail: {reasoning}"
+            outcome = f"[DEFEAT] Defender {defender[:8]} repelled assault by {attacker[:8]}. Lost: -{actual_st} score. Detail: Defender countermeasures grounded '{clean_strat}'."
+            def_outcome = f"[DEFENSE SUCCESSFUL] Successfully repelled assault by Agent {attacker[:8]}."
 
         self.last_mission_outcomes[attacker] = outcome
         self.last_mission_outcomes[defender] = def_outcome

@@ -11,7 +11,7 @@ import { TransactionStatus, ExecutionResult } from 'genlayer-js/types';
 import { WorldMap } from "@/components/WorldMap";
 import { Leaderboard, LeaderboardAgent } from "@/components/Leaderboard";
 
-const CONTRACT_ADDRESS = "0xbDa11A2C1b5695225F52EFcb56B7ba24CA5eb98c";
+const CONTRACT_ADDRESS = "0x6F76F389BF3Cb94EF3F9A2EBefDa5EE5A83372DE";
 
 type TabMode = 'mission' | 'battle';
 
@@ -138,6 +138,20 @@ export default function Arena() {
         console.warn("Network check warning:", netErr);
       }
 
+      // Ensure connected wallet has GEN gas balance on GenLayer Studio (Zero-Fee Metaverse auto-faucet)
+      try {
+        const checkClient = createClient({ chain: studioChain });
+        const bal = await checkClient.getBalance({ address: address as `0x${string}` });
+        if (bal < 1000000000000000000n) {
+          await checkClient.request({
+            method: 'sim_fundAccount',
+            params: [address, 10],
+          });
+        }
+      } catch (fundErr) {
+        console.warn("Auto-faucet check skipped:", fundErr);
+      }
+
       const writeClient = createClient({
         chain: studioChain,
         account: address as `0x${string}`,
@@ -187,6 +201,10 @@ export default function Arena() {
       alert("Please select or enter a target defender agent address.");
       return;
     }
+    if (targetDefender.trim().toLowerCase() === address.toLowerCase()) {
+      alert("You cannot battle yourself! Please select a rival agent from the leaderboard or map.");
+      return;
+    }
     const finalStrategy = battleStrategy.trim() || "Overload grid nodes with EMP pulse and launch direct assault";
 
     try {
@@ -223,6 +241,20 @@ export default function Arena() {
         }
       } catch (netErr) {
         console.warn("Network check warning:", netErr);
+      }
+
+      // Ensure connected wallet has GEN gas balance on GenLayer Studio (Zero-Fee Metaverse auto-faucet)
+      try {
+        const checkClient = createClient({ chain: studioChain });
+        const bal = await checkClient.getBalance({ address: address as `0x${string}` });
+        if (bal < 1000000000000000000n) {
+          await checkClient.request({
+            method: 'sim_fundAccount',
+            params: [address, 10],
+          });
+        }
+      } catch (fundErr) {
+        console.warn("Auto-faucet check skipped:", fundErr);
       }
 
       const writeClient = createClient({

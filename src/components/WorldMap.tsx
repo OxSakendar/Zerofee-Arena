@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { createClient } from 'genlayer-js';
 import { studionet as studioChain } from 'genlayer-js/chains';
 
-const CONTRACT_ADDRESS = "0xbDa11A2C1b5695225F52EFcb56B7ba24CA5eb98c";
+const CONTRACT_ADDRESS = "0x6F76F389BF3Cb94EF3F9A2EBefDa5EE5A83372DE";
 
 export interface SectorNode {
   id: string;
@@ -53,13 +53,11 @@ export const WorldMap: React.FC<WorldMapProps> = ({ isOpen, onClose, onSelectTar
         args: [],
       });
 
-      if (typeof rawRes === "string") {
-        const data = JSON.parse(rawRes);
-        if (data && Array.isArray(data.sectors)) {
-          setSectors(data.sectors);
-          setActiveAgents(Number(data.total_agents || 0));
-          setTotalTerritories(Number(data.total_territories || 0));
-        }
+      const data = typeof rawRes === "string" ? JSON.parse(rawRes) : rawRes;
+      if (data && Array.isArray(data.sectors)) {
+        setSectors(data.sectors);
+        setActiveAgents(Number(data.total_agents || 0));
+        setTotalTerritories(Number(data.total_territories || 0));
       }
     } catch (err) {
       console.warn("Error reading contract world sectors:", err);
